@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using QRCoder;
 using WebApi.Services;
 
 namespace WebApi.Controllers;
 
 [ApiController]
-[Route("payments")]
+[Route("students")]
 public class StudentController : ControllerBase
 {
     private readonly IStudentService _service;
@@ -26,5 +27,18 @@ public class StudentController : ControllerBase
     {
         var result = await _service.SearchAsync(name, course, minPayment);
         return Ok(result);
+    }
+    
+    [HttpGet("{id}/qrcode")]
+    public async Task<IActionResult> GetQrCode([FromRoute] int id)
+    {
+        var url = $"http://localhost:5255/students/{id}";
+        
+        using var qrGenerator = new QRCodeGenerator();
+        using var qrData = qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.Q);
+        var qrCode = new PngByteQRCode(qrData);
+        byte[] qrCodeBytes = qrCode.GetGraphic(20);
+
+        return File(qrCodeBytes, "image/png");
     }
 }

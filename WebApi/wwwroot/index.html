@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>QR Generator</title>
+    <style>
+        body { font-family: Inter, system-ui, -apple-system, Roboto, "Segoe UI", Arial; background:#f6f7fb; color:#111; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }
+        .card { background:white; padding:20px; border-radius:12px; box-shadow:0 6px 18px rgba(20,30,50,0.08); width:360px; text-align:center; }
+        h1{font-size:18px;margin:0 0 12px}
+        input[type="text"]{width:100%;padding:10px;border:1px solid #e6e9ef;border-radius:8px;font-size:14px;margin-bottom:10px}
+        button{padding:10px 14px;border-radius:8px;border:0;background:#2563eb;color:white;cursor:pointer;width:100%}
+        img{margin-top:12px;max-width:100%;}
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>QR по ID</h1>
+    <input id="idInput" type="text" placeholder="Введите id" />
+    <button id="go">Сгенерировать QR</button>
+    <div id="qr"></div>
+</div>
+
+<script>
+    const goBtn = document.getElementById('go');
+    const idInput = document.getElementById('idInput');
+    const qrDiv = document.getElementById('qr');
+
+    goBtn.addEventListener('click', ()=>{
+        const id = idInput.value;
+        const url = `/students/${encodeURIComponent(id)}`;
+        qrDiv.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}" alt="QR Code" />`;
+    });
+</script>
+</body>
+</html>
