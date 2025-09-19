@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using QRCoder;
+using WebApi.Data.Entities;
 using WebApi.Services;
 
 namespace WebApi.Controllers;
@@ -40,5 +41,12 @@ public class StudentController : ControllerBase
         byte[] qrCodeBytes = qrCode.GetGraphic(20);
 
         return File(qrCodeBytes, "image/png");
+    }
+    
+    [HttpPost("add-student")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> Add([FromForm]AddStudentDto student)
+    {
+        return Ok(await _service.Add(student));
     }
 }

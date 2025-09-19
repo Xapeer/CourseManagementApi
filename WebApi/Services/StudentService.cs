@@ -3,16 +3,10 @@ using WebApi.Data.Entities;
 
 namespace WebApi.Services;
 
-public class StudentService : IStudentService
+public class StudentService(DbContext _dbContext, IWebHostEnvironment environment) : IStudentService
 {
-    private readonly DbContext _dbContext;
-
-    public StudentService(DbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
     
-    public async Task<List<Student>> GetAllAsync()
+    public async Task<List<AddStudentDto>> GetAllAsync()
     {
         var sql = @"
         select 
@@ -29,11 +23,11 @@ public class StudentService : IStudentService
     ";
 
         using var conn = _dbContext.CreateConnection();
-        var students = await conn.QueryAsync<Student>(sql);
+        var students = await conn.QueryAsync<AddStudentDto>(sql);
         return students.ToList();
     }
     
-    public async Task<List<Student>> SearchAsync(string? name, string? course, decimal? minPayment)
+    public async Task<List<AddStudentDto>> SearchAsync(string? name, string? course, decimal? minPayment)
     {
         var sql = @"
             select 
@@ -52,12 +46,65 @@ public class StudentService : IStudentService
         ";
 
         using var conn = _dbContext.CreateConnection();
-        var list = await conn.QueryAsync<Student>(sql, new { name, course, minPayment });
+        var list = await conn.QueryAsync<AddStudentDto>(sql, new { name, course, minPayment });
         return list.ToList();
     }
     
     
-    
+    public async Task<GetStudentDto> Add(AddStudentDto addStudentDto)
+    {
+        string sql;
+        int resultId;
+        string filename = string.Empty;
+        if (addStudentDto.ProfilePicture is null)
+        {
+            sql =
+                @"insert into students (FullName,Phone) 
+                    values(@FullName,@Phone) returning id";
+            resultId = await _dbContext.CreateConnection().ExecuteScalarAsync<int>(sql, addStudentDto);   
+        }
+        else
+        {
+            filename = Guid.NewGuid().ToString() + Path.GetExtension(addStudentDto.ProfilePicture.FileName);
+            var savedFile = await CreateImageFile(addStudentDto.ProfilePicture,filename);
+            if (savedFile == false)
+                throw new Exception("File not saved");
+           
+            sql = @"insert into students (FullName,Phone) 
+                    values(@FullName,@Phone) returning id";
+            resultId = await _dbContext.CreateConnection().ExecuteScalarAsync<int>(sql, new
+            {
+                fullname = addStudentDto.FullName,
+                phone = addStudentDto.Phone,
+                profilepicture = filename,
+            });
+
+        }
+
+        return new GetStudentDto()
+        {
+            Id = resultId,
+            FullName = addStudentDto.FullName,
+            Phone = addStudentDto.Phone,
+            ProfilePicture = addStudentDto.ProfilePicture != null ? GenerateFileLink(filename) : string.Empty
+        };
+
+    }
+    private string GenerateFileLink(string filename)
+    {
+        var path = Path.Combine("http://localhost:5255", "images", filename);
+        return path;
+    }
+
+    private async Task<bool> CreateImageFile(IFormFile file, string filename)
+    {
+        var filedirectory = Path.Combine(environment.WebRootPath, "images", filename);
+        await using (var stream = new FileStream(filedirectory, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+        return true;
+    }
     
 
 }
